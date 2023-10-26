@@ -8,7 +8,7 @@ impl Block for DateBlock {
     fn render(&self) -> Option<I3Block> {
         let now = Local::now();
         Some(I3Block {
-            full_text: now.format("(KW%V) %d.%m. (%b) %H:%M").to_string(),
+            full_text: now.format("(KW%V) %a, %d.%m. (%b) %H:%M").to_string(),
             short_text: Some(now.format("%H:%M").to_string()),
             ..Default::default()
         })
