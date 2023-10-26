@@ -54,7 +54,9 @@ impl Hidpp {
     }
 
     pub fn poll_devices(&self) {
-        *self.devices.write().unwrap() = self.inner.read().unwrap().poll_devices();
+        if let Some(new_devices) = self.inner.read().unwrap().poll_devices() {
+            *self.devices.write().unwrap() = new_devices;
+        }
     }
 
     pub fn devices(&self) -> Vec<Device> {
@@ -95,13 +97,13 @@ impl HidppInner {
             .collect::<HashMap<String, HidDevice>>();
     }
 
-    fn poll_devices(&self) -> Vec<Device> {
+    fn poll_devices(&self) -> Option<Vec<Device>> {
         let mut devices = vec![];
         for receiver in self.receivers.values() {
             // Clear buffer
             let mut buf = [0u8; 32];
             if receiver.read_timeout(&mut buf[..], 1000).is_err() {
-                continue;
+                return None;
             }
 
             // Count connected devices
@@ -114,7 +116,7 @@ impl HidppInner {
                 data: 0x0200_0000_u32.to_be_bytes(),
             };
             if receiver.write(&msg.to_binary()).is_err() {
-                continue;
+                return None;
             }
 
             let mut buf = [0u8; 7];
@@ -122,10 +124,10 @@ impl HidppInner {
                 .read_timeout(&mut buf[..], SHORT_READ_TIMEOUT)
                 .is_err()
             {
-                continue;
+                return None;
             }
             if buf[0] != 0x10 || buf[1] != 0xff || buf[2] != 0x81 {
-                continue;
+                return None;
             }
             let num_connected = buf[5];
 
@@ -197,7 +199,7 @@ impl HidppInner {
                 }
             }
         }
-        devices
+        Some(devices)
     }
 }
 
