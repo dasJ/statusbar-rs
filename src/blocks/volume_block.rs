@@ -24,6 +24,7 @@ enum PulseCommand {
     VolUp,
     VolDown,
     ToggleMute,
+    QuitThread,
 }
 
 pub struct VolumeBlock {
@@ -122,6 +123,8 @@ impl VolumeBlock {
                         // Connection died, let's reconnect
                         let _idc = handle.join(); // Wait for the thread to die
                         let sender2 = sender.clone();
+                        let _idc = cmd_sender2.lock().unwrap().send(PulseCommand::QuitThread); // Quit command
+                                                                                               // thread
                         let (cmd_sender, cmd_receiver) = std::sync::mpsc::channel();
                         *cmd_sender2.lock().unwrap() = cmd_sender;
                         handle = std::thread::spawn(move || pulse_thread(sender2, cmd_receiver));
@@ -289,12 +292,15 @@ fn pulse_thread(
                         .set_sink_mute_by_index(sink, !state.muted, None);
                 }
             }
+            PulseCommand::QuitThread => {
+                return;
+            }
         };
     });
 
     // Main loop
     loop {
-        match mainloop.borrow_mut().iterate(false) {
+        match mainloop.borrow_mut().iterate(true) {
             IterateResult::Quit(_) => {
                 eprintln!("Quit");
                 break;
