@@ -1,6 +1,7 @@
 pub mod battery_block;
 pub mod date_block;
 pub mod default_route_block;
+pub mod dunst_block;
 mod hidpp;
 pub mod load_block;
 pub mod temperature_block;
