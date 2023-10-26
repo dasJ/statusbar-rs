@@ -69,7 +69,8 @@ fn event_handler(blocks: Vec<Arc<dyn Block + Sync + Send>>) {
             continue;
         }
         // Handle the event
-        if let Ok(event) = serde_json::from_str::<I3Event>(&line[1..]) {
+        if let Ok(event) = serde_json::from_str::<I3Event>(line.strip_prefix(',').unwrap_or(&line))
+        {
             if let Some(ref name) = event.name {
                 if let Ok(name) = name.parse::<usize>() {
                     if let Some(block) = blocks.get(name) {
