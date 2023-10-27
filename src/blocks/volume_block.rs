@@ -248,7 +248,9 @@ fn pulse_thread(
     // Handle commands
     let context2 = context.clone();
     std::thread::spawn(move || loop {
-        let Ok(msg) = receiver.recv() else { continue; };
+        let Ok(msg) = receiver.recv() else {
+            continue;
+        };
         let state = state.read().unwrap();
         match msg {
             PulseCommand::VolUp => {

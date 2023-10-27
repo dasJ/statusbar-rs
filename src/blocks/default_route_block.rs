@@ -10,7 +10,9 @@ impl Block for DefaultRouteBlock {
         let reader = BufReader::new(File::open("/proc/net/route").ok()?).lines();
         for line in reader.flatten() {
             let mut split = line.split('\t');
-            let Some(interface) = split.next() else { continue; };
+            let Some(interface) = split.next() else {
+                continue;
+            };
             // Detect default route
             if split.next() == Some("00000000") {
                 return Some(I3Block {

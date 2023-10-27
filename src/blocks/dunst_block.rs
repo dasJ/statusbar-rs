@@ -44,7 +44,10 @@ impl DunstBlock {
     pub fn new(timer_cancel: Sender<()>) -> Self {
         // Connect
         let Ok(dbus_conn) = Connection::session() else {
-            return Self { paused_state: None, toggle_channel: None };
+            return Self {
+                paused_state: None,
+                toggle_channel: None,
+            };
         };
 
         // Build proxy
@@ -53,14 +56,19 @@ impl DunstBlock {
             "org.freedesktop.Notifications",
             "/org/freedesktop/Notifications",
             "org.dunstproject.cmd0",
-        )
-            else {
-            return Self { paused_state: None, toggle_channel: None };
+        ) else {
+            return Self {
+                paused_state: None,
+                toggle_channel: None,
+            };
         };
 
         // Query initial state
         let Ok(initial_value) = proxy.get_property::<bool>("paused") else {
-            return Self { paused_state: None, toggle_channel: None };
+            return Self {
+                paused_state: None,
+                toggle_channel: None,
+            };
         };
         let value = Arc::new(AtomicBool::new(initial_value));
 
