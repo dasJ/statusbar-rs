@@ -58,18 +58,19 @@ impl Block for BatteryBlock {
                 }
 
                 // Calculate the resulting string
-                batteries
+                let ret = batteries
                     .iter()
                     .map(|bat| {
                         if charging {
-                            format!("🔋<span foreground='#02ff02'>{bat}%</span>")
+                            format!(" 🔋<span foreground='#02ff02'>{bat}%</span>")
                         } else if bat <= &15u8 {
-                            format!("🪫<span foreground='#ff0202'>{bat}%</span>")
+                            format!(" 🪫<span foreground='#ff0202'>{bat}%</span>")
                         } else {
-                            format!("🔋{bat}%")
+                            format!(" 🔋{bat}%")
                         }
                     })
-                    .collect::<String>()
+                    .collect::<String>();
+                ret.trim().to_owned()
             } else {
                 String::new()
             }
@@ -105,7 +106,16 @@ impl Block for BatteryBlock {
                 *self.last_bluetooth_poll.write().unwrap() = Instant::now();
             }
 
-            devices.iter().map(Clone::clone).collect::<String>()
+            let ret = devices
+                .iter()
+                .map(Clone::clone)
+                .collect::<Vec<String>>()
+                .join("  ");
+            if ret.is_empty() {
+                ret
+            } else {
+                format!("  {ret}")
+            }
         } else {
             String::new()
         };
@@ -161,7 +171,16 @@ impl Block for BatteryBlock {
                 std::thread::spawn(move || hidpp.poll_devices());
                 *self.last_hidpp_dev_poll.write().unwrap() = Instant::now();
             }
-            devices.iter().map(Clone::clone).collect::<String>()
+            let ret = devices
+                .iter()
+                .map(Clone::clone)
+                .collect::<Vec<String>>()
+                .join("  ");
+            if ret.is_empty() {
+                ret
+            } else {
+                format!("  {ret}")
+            }
         } else {
             String::new()
         };
