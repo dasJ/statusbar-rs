@@ -1,10 +1,13 @@
+use super::bluetooth_battery;
 use super::hidpp::{BatteryStatus, Hidpp};
 use super::{Block, I3Block, I3Event};
-use std::sync::RwLock;
+use std::sync::{mpsc::Sender, RwLock};
 use std::time::Instant;
 
 pub struct BatteryBlock {
+    bluetooth: Option<bluetooth_battery::BluetoothBattery>,
     hidpp: Option<Hidpp>,
+    last_bluetooth_poll: RwLock<Instant>,
     last_hidpp_recv_poll: RwLock<Instant>,
     last_hidpp_dev_poll: RwLock<Instant>,
 }
@@ -72,6 +75,41 @@ impl Block for BatteryBlock {
             }
         };
 
+        // Render bluetooth devices
+        let bluetooth = if let Some(bluetooth) = &self.bluetooth {
+            let mut devices = vec![];
+            for (icon, percentage) in bluetooth.percentages() {
+                let emoji = match icon.as_deref() {
+                    Some("phone") => "📱",
+                    Some("computer") => "💻",
+                    Some("video-display") => "📼",
+                    Some("multimedia-player") => "⏯",
+                    Some("scanner" | "printer") => "🖨️",
+                    Some("input-keyboard") => "⌨️",
+                    Some("input-mouse") => "🖱️",
+                    Some("input-gaming") => "🎮",
+                    Some("input-tablet") => "✍️",
+                    Some("modem" | "network-wireless") => "🛜",
+                    Some("audio-headset" | "audio-headphones") => "🎧",
+                    Some("camera-video") => "📹",
+                    Some("audio-card") => "🎵",
+                    Some("camera-photo") => "📷",
+                    _ => "",
+                };
+                devices.push(format!("{emoji}{percentage}%"));
+            }
+
+            // Poll devices every 2 minutes
+            if self.last_bluetooth_poll.read().unwrap().elapsed().as_secs() > 120 {
+                bluetooth.update();
+                *self.last_bluetooth_poll.write().unwrap() = Instant::now();
+            }
+
+            devices.iter().map(Clone::clone).collect::<String>()
+        } else {
+            String::new()
+        };
+
         // Find HID++ devices
         let hidpp = if let Some(hidpp_devices) = &self.hidpp {
             let mut devices = vec![];
@@ -128,11 +166,11 @@ impl Block for BatteryBlock {
             String::new()
         };
 
-        if power_batteries.is_empty() && hidpp.is_empty() {
+        if power_batteries.is_empty() && bluetooth.is_empty() && hidpp.is_empty() {
             return None;
         }
         Some(I3Block {
-            full_text: format!("{power_batteries}{hidpp}"),
+            full_text: format!("{power_batteries}{bluetooth}{hidpp}"),
             markup: Some(super::Markup::Pango),
             ..Default::default()
         })
@@ -141,10 +179,12 @@ impl Block for BatteryBlock {
     fn click(&self, _: &I3Event) {}
 }
 
-impl Default for BatteryBlock {
-    fn default() -> Self {
+impl BatteryBlock {
+    pub fn new(timer_cancel: &Sender<()>) -> Self {
         Self {
             hidpp: Hidpp::new(),
+            bluetooth: bluetooth_battery::BluetoothBattery::new(timer_cancel),
+            last_bluetooth_poll: RwLock::new(Instant::now()),
             last_hidpp_recv_poll: RwLock::new(Instant::now()),
             last_hidpp_dev_poll: RwLock::new(Instant::now()),
         }

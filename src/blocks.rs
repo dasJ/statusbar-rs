@@ -1,4 +1,5 @@
 pub mod battery_block;
+mod bluetooth_battery;
 pub mod date_block;
 pub mod default_route_block;
 pub mod dunst_block;
