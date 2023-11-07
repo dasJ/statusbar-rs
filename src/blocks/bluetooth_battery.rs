@@ -136,7 +136,7 @@ impl BluetoothBattery {
         let dbus_conn = Arc::clone(&self.dbus_conn);
         let devices = Arc::clone(&self.devices);
         std::thread::spawn(move || {
-            for (path, dev) in devices.write().unwrap().iter_mut() {
+            for (path, dev) in &mut *devices.write().unwrap() {
                 let Ok(proxy) = Proxy::new(&dbus_conn, "org.bluez", path, "org.bluez.Battery1")
                 else {
                     continue;
