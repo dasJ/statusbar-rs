@@ -176,7 +176,7 @@ impl Block for BatteryBlock {
                 .map(Clone::clone)
                 .collect::<Vec<String>>()
                 .join("  ");
-            if ret.is_empty() {
+            if ret.is_empty() || (power_batteries.is_empty() && bluetooth.is_empty()) {
                 ret
             } else {
                 format!("  {ret}")
