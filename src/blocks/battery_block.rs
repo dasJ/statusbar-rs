@@ -139,7 +139,7 @@ impl Block for BatteryBlock {
                     BatteryStatus::Recharging
                     | BatteryStatus::AlmostFull
                     | BatteryStatus::SlowRecharge => devices.push(format!(
-                        "{}<span foreground='#ff0202'>{}%</span>",
+                        "{}<span foreground='#02ff02'>{}%</span>",
                         dev.kind.emoji(),
                         dev.charge
                     )),
