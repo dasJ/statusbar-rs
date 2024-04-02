@@ -13,4 +13,4 @@ serde_json = "*"
 hidapi = "2.6.1"
 libpulse-binding = { version = "2.28.1", default-features = false, features = ["pa_v15"] }
 thiserror = "1.0.58"
-zbus = { version = "3.14.1", default-features = false, features = ["blocking", "tokio"] }
+zbus = { version = "3.15.2", default-features = false, features = ["blocking", "tokio"] }
