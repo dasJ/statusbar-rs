@@ -64,7 +64,7 @@ fn main() {
 /// Handles I3 mouse events
 fn event_handler(blocks: Vec<Arc<dyn Block + Sync + Send>>) {
     let stdin = std::io::stdin();
-    for line in stdin.lock().lines().flatten() {
+    for line in stdin.lock().lines().map_while(Result::ok) {
         // Pretty much I3's "hello"
         if line == "[" || line.is_empty() {
             continue;

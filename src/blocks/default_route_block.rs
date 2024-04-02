@@ -8,7 +8,7 @@ pub struct DefaultRouteBlock {}
 impl Block for DefaultRouteBlock {
     fn render(&self) -> Option<I3Block> {
         let reader = BufReader::new(File::open("/proc/net/route").ok()?).lines();
-        for line in reader.flatten() {
+        for line in reader.map_while(Result::ok) {
             let mut split = line.split('\t');
             let Some(interface) = split.next() else {
                 continue;
