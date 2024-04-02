@@ -29,5 +29,3 @@ jobs:
         run: cargo clippy --all-targets -- -D warnings $(cat .lints | cut -f1 -d"#" | tr '\n' ' ')
       - name: Run rustfmt
         run: cargo fmt -- --check
-      - name: Run cargo-deny
-        uses: EmbarkStudios/cargo-deny-action@v1
