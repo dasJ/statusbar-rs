@@ -47,20 +47,27 @@ impl BluetoothBattery {
             for item in stream {
                 // Deconstruct the body of the signal
                 // This also gets us the battery percentage and skips devices without battery
-                let body: zbus::zvariant::Structure = match item.body() {
+                let body = item.body();
+                let body: zbus::zvariant::Structure = match body.deserialize() {
                     Ok(v) => v,
                     Err(_) => continue,
                 };
-                let zvariant::Value::ObjectPath(path) = body.fields()[0].clone() else {
+                let zvariant::Value::ObjectPath(path) = body.fields()[0]
+                    .try_clone()
+                    .expect("Object paths cannot be FDs")
+                else {
                     continue;
                 };
-                let zvariant::Value::Dict(rest) = body.fields()[1].clone() else {
+                let zvariant::Value::Dict(ref rest) = body.fields()[1] else {
                     continue;
                 };
-                let Ok(Some(zvariant::Value::Dict(batt))) = rest.get("org.bluez.Battery1") else {
+                let batt_str = String::from("org.bluez.Battery1");
+                let Ok(Some(zvariant::Value::Dict(batt))) = rest.get(&batt_str) else {
                     continue;
                 };
-                let Ok(Some(zvariant::Value::U8(percentage))) = batt.get("Percentage") else {
+                let Ok(Some(zvariant::Value::U8(percentage))) =
+                    batt.get(&String::from("Percentage"))
+                else {
                     continue;
                 };
 
@@ -71,10 +78,7 @@ impl BluetoothBattery {
                 let icon = proxy.get_property::<String>("Icon").ok();
 
                 // Insert the device
-                let dev = Device {
-                    percentage: *percentage,
-                    icon,
-                };
+                let dev = Device { percentage, icon };
                 devs.write().unwrap().insert(path.into_owned().into(), dev);
                 let _idc = sender.send(());
             }
@@ -86,14 +90,15 @@ impl BluetoothBattery {
         let sender = timer_cancel.clone();
         std::thread::spawn(move || {
             for item in stream {
-                let body: zbus::zvariant::Structure = match item.body() {
+                let body = item.body();
+                let body: zbus::zvariant::Structure = match body.deserialize() {
                     Ok(v) => v,
                     Err(_) => continue,
                 };
-                let zvariant::Value::ObjectPath(path) = body.fields()[0].clone() else {
+                let zvariant::Value::ObjectPath(ref path) = body.fields()[0] else {
                     continue;
                 };
-                devs.write().unwrap().remove(&path.into_owned().into());
+                devs.write().unwrap().remove(&path.clone().into());
                 let _idc = sender.send(());
             }
         });
