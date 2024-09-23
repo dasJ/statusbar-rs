@@ -13,9 +13,7 @@ pub struct DunstBlock {
 
 impl Block for DunstBlock {
     fn render(&self) -> Option<I3Block> {
-        let Some(paused_state) = &self.paused_state else {
-            return None;
-        };
+        let paused_state = self.paused_state.as_ref()?;
 
         if paused_state.load(Ordering::Relaxed) {
             Some(I3Block {
