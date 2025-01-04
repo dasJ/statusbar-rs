@@ -8,6 +8,8 @@ pub mod load_block;
 pub mod temperature_block;
 pub mod volume_block;
 
+use std::fmt::{Display, Formatter};
+
 use super::I3Event;
 
 #[derive(Debug, serde::Serialize)]
@@ -15,10 +17,10 @@ pub enum Markup {
     Pango,
 }
 
-impl ToString for Markup {
-    fn to_string(&self) -> String {
+impl Display for Markup {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Pango => "pango".to_owned(),
+            Self::Pango => write!(f, "pango"),
         }
     }
 }
