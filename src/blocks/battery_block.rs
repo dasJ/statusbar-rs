@@ -15,10 +15,15 @@ pub struct BatteryBlock {
 impl Block for BatteryBlock {
     #[allow(clippy::too_many_lines)]
     fn render(&self) -> Option<I3Block> {
+        struct Battery {
+            percent_charged: u8,
+            watts_charging: f32,
+        }
         // Find power supply batteries
         let power_batteries = {
             if let Ok(dir) = std::fs::read_dir("/sys/class/power_supply") {
                 let mut batteries = vec![];
+
                 let mut charging = false;
 
                 for supply in dir.flatten() {
@@ -28,16 +33,30 @@ impl Block for BatteryBlock {
                         .map(|x| x.starts_with("BAT"))
                         .unwrap_or(false)
                     {
+                        let mut percent_charged = 0;
+                        let mut watts = 0.0;
+
                         let mut path = supply.path();
                         path.push("capacity");
                         if let Ok(contents) = std::fs::read_to_string(path) {
                             let contents = contents.trim();
                             if let Ok(percent) = contents.parse::<u8>() {
-                                batteries.push(percent);
+                                percent_charged = percent;
                             }
-                        } else {
-                            continue;
                         }
+
+                        let mut path = supply.path();
+                        path.push("power_now");
+                        if let Ok(contents) = std::fs::read_to_string(path) {
+                            let contents = contents.trim();
+                            if let Ok(energy) = contents.parse::<f32>() {
+                                watts = energy / 1_000_000.0;
+                            }
+                        }
+                        batteries.push(Battery {
+                            percent_charged,
+                            watts_charging: watts,
+                        });
                     } else if supply
                         .file_name()
                         .into_string()
@@ -57,16 +76,21 @@ impl Block for BatteryBlock {
                     }
                 }
 
-                // Calculate the resulting string
                 let ret = batteries
                     .iter()
                     .map(|bat| {
                         if charging {
-                            format!(" 🔋<span foreground='#02ff02'>{bat}%</span>")
-                        } else if bat <= &15u8 {
-                            format!(" 🪫<span foreground='#ff0202'>{bat}%</span>")
+                            format!(
+                                " 🔋<span foreground='#02ff02'>{}% {:.2}W+</span>",
+                                bat.percent_charged, bat.watts_charging
+                            )
+                        } else if bat.percent_charged <= 15u8 {
+                            format!(
+                                " 🪫<span foreground='#ff0202'>{}% {:.2}W-</span>",
+                                bat.percent_charged, bat.watts_charging
+                            )
                         } else {
-                            format!(" 🔋{bat}%")
+                            format!(" 🔋{}% {:.2}W-", bat.percent_charged, bat.watts_charging)
                         }
                     })
                     .collect::<String>();

@@ -15,7 +15,14 @@ fn main() {
     // Build blocks
     let blocks: Vec<Arc<dyn Block + Sync + Send>> = vec![
         Arc::new(blocks::volume_block::VolumeBlock::new(send.clone())),
+        #[cfg(feature = "chris")]
+        Arc::<blocks::memory_block::MemoryBlock>::default(),
+        #[cfg(feature = "chris")]
+        Arc::<blocks::disk_block::DiskBlock>::default(),
         Arc::new(blocks::battery_block::BatteryBlock::new(&send)),
+        #[cfg(feature = "chris")]
+        Arc::<blocks::ip_block::IPBlock>::default(),
+        #[cfg(feature = "janne")]
         Arc::<blocks::default_route_block::DefaultRouteBlock>::default(),
         Arc::new(blocks::dunst_block::DunstBlock::new(send)),
         Arc::<blocks::load_block::LoadBlock>::default(),
