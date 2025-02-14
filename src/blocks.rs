@@ -1,10 +1,17 @@
 pub mod battery_block;
 mod bluetooth_battery;
 pub mod date_block;
+#[cfg(feature = "janne")]
 pub mod default_route_block;
+#[cfg(feature = "chris")]
+pub mod disk_block;
 pub mod dunst_block;
 mod hidpp;
+#[cfg(feature = "chris")]
+pub mod ip_block;
 pub mod load_block;
+#[cfg(feature = "chris")]
+pub mod memory_block;
 pub mod temperature_block;
 pub mod volume_block;
 

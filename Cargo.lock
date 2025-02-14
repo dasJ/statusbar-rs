@@ -649,6 +649,7 @@ dependencies = [
  "chrono",
  "hidapi",
  "libpulse-binding",
+ "nix",
  "serde",
  "serde_json",
  "thiserror",
