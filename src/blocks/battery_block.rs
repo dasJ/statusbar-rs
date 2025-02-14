@@ -45,7 +45,6 @@ impl Block for BatteryBlock {
                             }
                         }
 
-                        {
                         let mut path = supply.path();
                         path.push("power_now");
                         if let Ok(contents) = std::fs::read_to_string(path) {
@@ -54,8 +53,10 @@ impl Block for BatteryBlock {
                                 watts = energy / 1_000_000.0;
                             }
                         }
-                        batteries.push(Battery{percent_charged, watts_charging:watts});
-                    }
+                        batteries.push(Battery {
+                            percent_charged,
+                            watts_charging: watts,
+                        });
                     } else if supply
                         .file_name()
                         .into_string()
@@ -79,9 +80,15 @@ impl Block for BatteryBlock {
                     .iter()
                     .map(|bat| {
                         if charging {
-                            format!(" 🔋<span foreground='#02ff02'>{}% {:.2}W+</span>", bat.percent_charged, bat.watts_charging)
+                            format!(
+                                " 🔋<span foreground='#02ff02'>{}% {:.2}W+</span>",
+                                bat.percent_charged, bat.watts_charging
+                            )
                         } else if bat.percent_charged <= 15u8 {
-                            format!(" 🪫<span foreground='#ff0202'>{}% {:.2}W-</span>", bat.percent_charged, bat.watts_charging)
+                            format!(
+                                " 🪫<span foreground='#ff0202'>{}% {:.2}W-</span>",
+                                bat.percent_charged, bat.watts_charging
+                            )
                         } else {
                             format!(" 🔋{}% {:.2}W-", bat.percent_charged, bat.watts_charging)
                         }

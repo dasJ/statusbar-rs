@@ -67,10 +67,11 @@ impl Block for IPBlock {
 fn get_nm_ssid(interface: &str) -> String {
     let output = match Command::new("nmcli")
         .args(vec!["connection", "show"])
-        .output() {
-            Ok(out) => out,
-            Err(_) => return String::new(),
-        };
+        .output()
+    {
+        Ok(out) => out,
+        Err(_) => return String::new(),
+    };
     String::from_utf8(output.stdout)
         .unwrap_or_default()
         .lines()
