@@ -28,7 +28,12 @@ impl Block for IPBlock {
                             if ifaddr.interface_name == interface
                                 && address.family() == Some(nix::sys::socket::AddressFamily::Inet)
                             {
-                                addr = address.to_string().split(":").next().expect("").to_string();
+                                addr = address
+                                    .to_string()
+                                    .split(":")
+                                    .next()
+                                    .unwrap_or_default()
+                                    .to_string();
                             };
                         }
                         None => {}
@@ -67,11 +72,11 @@ fn get_nm_ssid(interface: &str) -> String {
             interface
         ))
         .output()
-        .expect("");
+        .unwrap_or_default();
     return String::from_utf8(output.stdout)
-        .expect("")
+        .unwrap_or_default()
         .split("  ")
         .next()
-        .expect("")
+        .unwrap_or_default()
         .to_owned();
 }
