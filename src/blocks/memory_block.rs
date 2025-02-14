@@ -23,8 +23,8 @@ impl Block for MemoryBlock {
                 continue;
             };
             let mut parts = line.split_whitespace();
-            let key = parts.next().unwrap();
-            let value = parts.next().unwrap();
+            let key = parts.next().unwrap_or_default();
+            let value = parts.next().unwrap_or_default();
 
             match key {
                 "MemTotal:" => {
@@ -58,7 +58,7 @@ impl Block for MemoryBlock {
         };
 
         Some(I3Block {
-            full_text: full_text.to_string(),
+            full_text,
             short_text: Some(format!("{:.2} GB", available_mem_gb).to_string()),
             color,
             ..Default::default()

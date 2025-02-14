@@ -19,6 +19,8 @@ impl Block for BatteryBlock {
         let power_batteries = {
             if let Ok(dir) = std::fs::read_dir("/sys/class/power_supply") {
                 let mut batteries = vec![];
+                #[cfg(feature = "chris")]
+                let mut watts = vec![];
                 let mut charging = false;
 
                 for supply in dir.flatten() {
@@ -38,6 +40,19 @@ impl Block for BatteryBlock {
                         } else {
                             continue;
                         }
+                        #[cfg(feature = "chris")]
+                        {
+                        let mut path = supply.path();
+                        path.push("power_now");
+                        if let Ok(contents) = std::fs::read_to_string(path) {
+                            let contents = contents.trim();
+                            if let Ok(energy) = contents.parse::<f32>() {
+                                watts.push(energy / 1_000_000.0)
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
                     } else if supply
                         .file_name()
                         .into_string()
@@ -58,7 +73,8 @@ impl Block for BatteryBlock {
                 }
 
                 // Calculate the resulting string
-                let ret = batteries
+                #[allow(unused_mut)]
+                let mut ret = batteries
                     .iter()
                     .map(|bat| {
                         if charging {
@@ -70,6 +86,24 @@ impl Block for BatteryBlock {
                         }
                     })
                     .collect::<String>();
+
+                #[cfg(feature = "chris")]
+                if batteries.len() == watts.len() {
+                ret = batteries
+                    .iter()
+                    .enumerate()
+                    .map(|bat| {
+                        if charging {
+                            format!(" 🔋<span foreground='#02ff02'>{}% {:.2}W+</span>", bat.1, watts[bat.0])
+                        } else if bat.1 <= &15u8 {
+                            format!(" 🪫<span foreground='#ff0202'>{}% {:.2}W-</span>", bat.1, watts[bat.0])
+                        } else {
+                            format!(" 🔋{}% {:.2}W-", bat.1, watts[bat.0])
+                        }
+                    })
+                    .collect::<String>();
+            }
+
                 ret.trim().to_owned()
             } else {
                 String::new()

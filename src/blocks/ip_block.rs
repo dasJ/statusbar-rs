@@ -19,7 +19,7 @@ impl Block for IPBlock {
             // Detect default route
             if split.next() == Some("00000000") {
                 // get ip for: interface
-                let mut addr = "".to_string();
+                let mut addr = String::new();
 
                 let addrs = nix::ifaddrs::getifaddrs().unwrap();
                 for ifaddr in addrs {
@@ -65,18 +65,16 @@ impl Block for IPBlock {
 }
 
 fn get_nm_ssid(interface: &str) -> String {
-    let output = Command::new("bash")
-        .arg("-c")
-        .arg(format!(
-            "nmcli connection show | grep {} | grep wifi",
-            interface
-        ))
-        .output()
-        .unwrap_or_default();
-    return String::from_utf8(output.stdout)
+    let output = match Command::new("nmcli")
+        .args(vec!["connection", "show"])
+        .output() {
+            Ok(out) => out,
+            Err(_) => return String::new(),
+        };
+    String::from_utf8(output.stdout)
         .unwrap_or_default()
-        .split("  ")
-        .next()
-        .unwrap_or_default()
-        .to_owned();
+        .lines()
+        .filter(|x| x.contains(interface))
+        .map(|x| x.split("  ").next().unwrap_or_default())
+        .collect()
 }

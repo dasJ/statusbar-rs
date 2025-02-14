@@ -28,7 +28,7 @@ impl Block for DiskBlock {
         };
 
         Some(I3Block {
-            full_text: full_text.to_string(),
+            full_text,
             short_text: Some(format!("{:.0} GB", free_gb).to_string()),
             color,
             ..Default::default()
