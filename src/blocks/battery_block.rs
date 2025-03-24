@@ -17,7 +17,7 @@ impl Block for BatteryBlock {
     fn render(&self) -> Option<I3Block> {
         struct Battery {
             percent_charged: u8,
-            watts_charging: f32,
+            watts_charging: f64,
         }
         // Find power supply batteries
         let power_batteries = {
@@ -34,7 +34,6 @@ impl Block for BatteryBlock {
                         .unwrap_or(false)
                     {
                         let mut percent_charged = 0;
-                        let mut watts = 0.0;
 
                         let mut path = supply.path();
                         path.push("capacity");
@@ -44,15 +43,20 @@ impl Block for BatteryBlock {
                                 percent_charged = percent;
                             }
                         }
+                        let current = std::fs::read_to_string(supply.path().join("current_now"))
+                            .ok()
+                            .and_then(|v| v.trim().parse::<f64>().ok());
 
-                        let mut path = supply.path();
-                        path.push("power_now");
-                        if let Ok(contents) = std::fs::read_to_string(path) {
-                            let contents = contents.trim();
-                            if let Ok(energy) = contents.parse::<f32>() {
-                                watts = energy / 1_000_000.0;
-                            }
-                        }
+                        let voltage = std::fs::read_to_string(supply.path().join("voltage_now"))
+                            .ok()
+                            .and_then(|v| v.trim().parse::<f64>().ok());
+
+                        let watts = if let (Some(current), Some(voltage)) = (current, voltage) {
+                            (current * voltage) / 1_000_000_000_000.0
+                        } else {
+                            0.0
+                        };
+
                         batteries.push(Battery {
                             percent_charged,
                             watts_charging: watts,
