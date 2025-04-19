@@ -357,9 +357,9 @@ checksum = "c19937216e9d3aa9956d9bb8dfc0b0c8beb6058fc4f7a4dc4d850edf86a237d6"
 
 [[package]]
 name = "libpulse-binding"
-version = "2.30.0"
+version = "2.30.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c878578bf2f3b5f40fb35def3263294be836cef1d1a92419299ff590b5328db6"
+checksum = "909eb3049e16e373680fe65afe6e2a722ace06b671250cc4849557bc57d6a397"
 dependencies = [
  "bitflags",
  "libc",
