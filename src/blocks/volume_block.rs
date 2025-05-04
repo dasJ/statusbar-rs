@@ -367,12 +367,11 @@ fn request_server_info(
 fn parse_sink_info(info: &SinkInfo, state: &mut State, sender: &Sender<PulseEvent>) {
     state.default_sink_index = Some(info.index);
     state.default_sink_name = info.name.clone().map(|x| x.to_string());
-    #[allow(
+    #[expect(
         clippy::cast_possible_truncation,
         clippy::cast_sign_loss,
-        clippy::cast_precision_loss
     )]
-    let volume = ((info.volume.avg().0 as f32 / Volume::NORMAL.0 as f32) * 100.) as u32;
+    let volume = (f64::from(info.volume.avg().0) / f64::from(Volume::NORMAL.0) * 100.).round() as u32;
     let muted = info.mute;
     if volume != state.volume || muted != state.muted {
         state.volume = volume;
