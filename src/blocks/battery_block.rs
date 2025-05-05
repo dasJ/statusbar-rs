@@ -49,7 +49,7 @@ impl Block for BatteryBlock {
                             .ok()
                             .and_then(|v| v.trim().parse::<f64>().ok());
 
-                        let watts = power.map(|x| x / 1_000_000.0).unwrap_or({
+                        let watts = power.map_or({
                             let current =
                                 std::fs::read_to_string(supply.path().join("current_now"))
                                     .ok()
@@ -65,7 +65,7 @@ impl Block for BatteryBlock {
                             } else {
                                 0.0
                             }
-                        });
+                        }, |x| x / 1_000_000.0);
 
                         batteries.push(Battery {
                             percent_charged,
