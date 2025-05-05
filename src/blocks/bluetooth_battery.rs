@@ -98,7 +98,9 @@ impl BluetoothBattery {
                 let zvariant::Value::ObjectPath(ref path) = body.fields()[0] else {
                     continue;
                 };
-                devs.write().unwrap().remove(&path.clone().into());
+                devs.write()
+                    .unwrap()
+                    .remove::<zvariant::OwnedObjectPath>(&path.clone().into());
                 let _idc = sender.send(());
             }
         });
