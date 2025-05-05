@@ -49,23 +49,26 @@ impl Block for BatteryBlock {
                             .ok()
                             .and_then(|v| v.trim().parse::<f64>().ok());
 
-                        let watts = power.map_or({
-                            let current =
-                                std::fs::read_to_string(supply.path().join("current_now"))
-                                    .ok()
-                                    .and_then(|v| v.trim().parse::<f64>().ok());
+                        let watts = power.map_or(
+                            {
+                                let current =
+                                    std::fs::read_to_string(supply.path().join("current_now"))
+                                        .ok()
+                                        .and_then(|v| v.trim().parse::<f64>().ok());
 
-                            let voltage =
-                                std::fs::read_to_string(supply.path().join("voltage_now"))
-                                    .ok()
-                                    .and_then(|v| v.trim().parse::<f64>().ok());
+                                let voltage =
+                                    std::fs::read_to_string(supply.path().join("voltage_now"))
+                                        .ok()
+                                        .and_then(|v| v.trim().parse::<f64>().ok());
 
-                            if let (Some(current), Some(voltage)) = (current, voltage) {
-                                (current * voltage) / 1_000_000_000_000.0
-                            } else {
-                                0.0
-                            }
-                        }, |x| x / 1_000_000.0);
+                                if let (Some(current), Some(voltage)) = (current, voltage) {
+                                    (current * voltage) / 1_000_000_000_000.0
+                                } else {
+                                    0.0
+                                }
+                            },
+                            |x| x / 1_000_000.0,
+                        );
 
                         batteries.push(Battery {
                             percent_charged,
