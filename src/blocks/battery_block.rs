@@ -43,19 +43,29 @@ impl Block for BatteryBlock {
                                 percent_charged = percent;
                             }
                         }
-                        let current = std::fs::read_to_string(supply.path().join("current_now"))
+                        // If somebody refactors this in the future: current_now is on Dell,
+                        // power_now on Lenovo
+                        let power = std::fs::read_to_string(supply.path().join("power_now"))
                             .ok()
                             .and_then(|v| v.trim().parse::<f64>().ok());
 
-                        let voltage = std::fs::read_to_string(supply.path().join("voltage_now"))
-                            .ok()
-                            .and_then(|v| v.trim().parse::<f64>().ok());
+                        let watts = power.map(|x| x / 1_000_000.0).unwrap_or({
+                            let current =
+                                std::fs::read_to_string(supply.path().join("current_now"))
+                                    .ok()
+                                    .and_then(|v| v.trim().parse::<f64>().ok());
 
-                        let watts = if let (Some(current), Some(voltage)) = (current, voltage) {
-                            (current * voltage) / 1_000_000_000_000.0
-                        } else {
-                            0.0
-                        };
+                            let voltage =
+                                std::fs::read_to_string(supply.path().join("voltage_now"))
+                                    .ok()
+                                    .and_then(|v| v.trim().parse::<f64>().ok());
+
+                            if let (Some(current), Some(voltage)) = (current, voltage) {
+                                (current * voltage) / 1_000_000_000_000.0
+                            } else {
+                                0.0
+                            }
+                        });
 
                         batteries.push(Battery {
                             percent_charged,
