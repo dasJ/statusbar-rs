@@ -45,7 +45,7 @@ impl Block for KimaiBlock {
 
         Some(I3Block {
             full_text: if *timesheet_is_active {
-                format!("<span foreground='#ff0202'>{duration}</span>")
+                format!("<span foreground='#02ff02'>{duration}</span>")
             } else {
                 duration.clone()
             },
