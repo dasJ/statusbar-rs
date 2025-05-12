@@ -191,7 +191,7 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
         if let Some(notify) = cfg.notify_daily_hours {
             if hours < notify.into() {
                 notified = false;
-            } else if hours >= notify.into() && !notified {
+            } else if hours >= notify.into() && !notified && timesheet_is_active {
                 if let Ok(Ok(ref dbus_notifier)) = dbus_notifier {
                     send_notification(dbus_notifier, notify);
                 }
