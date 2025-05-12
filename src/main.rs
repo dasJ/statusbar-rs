@@ -25,6 +25,8 @@ fn main() {
         #[cfg(feature = "janne")]
         Arc::<blocks::default_route_block::DefaultRouteBlock>::default(),
         Arc::new(blocks::dunst_block::DunstBlock::new(send)),
+        #[cfg(feature = "janne")]
+        Arc::new(blocks::kimai_block::KimaiBlock::default()),
         Arc::<blocks::load_block::LoadBlock>::default(),
         Arc::<blocks::temperature_block::TemperatureBlock>::default(),
         Arc::<blocks::date_block::DateBlock>::default(),

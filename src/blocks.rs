@@ -9,6 +9,8 @@ pub mod dunst_block;
 mod hidpp;
 #[cfg(feature = "chris")]
 pub mod ip_block;
+#[cfg(feature = "janne")]
+pub mod kimai_block;
 pub mod load_block;
 #[cfg(feature = "chris")]
 pub mod memory_block;

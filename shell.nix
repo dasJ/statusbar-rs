@@ -6,7 +6,8 @@ pkgs.mkShell {
   ];
 
   buildInputs = with pkgs; [
-    udev
     libpulseaudio
+    openssl
+    udev
   ];
 }
