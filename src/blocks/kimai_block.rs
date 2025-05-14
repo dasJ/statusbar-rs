@@ -20,8 +20,8 @@ enum CurrentState {
     NoData,
     /// An internal error has occured
     Error,
-    /// Duration is available and whether a timesheet is currently active
-    DurationAvailable((String, bool)),
+    /// Duration is available and the seconds the current timesheet is active
+    DurationAvailable((String, Option<u64>)),
 }
 
 pub struct KimaiBlock {
@@ -31,7 +31,7 @@ pub struct KimaiBlock {
 impl Block for KimaiBlock {
     fn render(&self) -> Option<I3Block> {
         let state = self.current_state.read().unwrap();
-        let (duration, timesheet_is_active) = match &*state {
+        let (duration, current_timesheet) = match &*state {
             CurrentState::NoData => return None,
             CurrentState::Error => {
                 return Some(I3Block {
@@ -44,11 +44,15 @@ impl Block for KimaiBlock {
         };
 
         Some(I3Block {
-            full_text: if *timesheet_is_active {
-                format!("<span foreground='#02ff02'>{duration}</span>")
+            full_text: if let Some(current_timesheet) = current_timesheet {
+                format!(
+                    "<span foreground='#02ff02'>({}) {duration}</span>",
+                    seconds_to_timestamp(*current_timesheet)
+                )
             } else {
                 duration.clone()
             },
+            short_text: Some(duration.clone()),
             markup: Some(Markup::Pango),
             ..Default::default()
         })
@@ -131,7 +135,7 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
             .single()
             .unwrap_or_else(Local::now);
         let mut resp = match http_agent
-            .get(format!("{}/api/timesheets/recent", cfg.base_url))
+            .get(format!("{}/api/timesheets", cfg.base_url))
             .header("Authorization", format!("Bearer {}", cfg.token))
             .query("begin", from.format("%Y-%m-%dT%H:%M:%S").to_string())
             .query("size", "20000")
@@ -154,15 +158,14 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
             }
         };
 
-        let mut timesheet_is_active = false;
+        let mut active_timesheet_duration = None;
         let duration: u64 = json
             .into_iter()
             .filter_map(|ts| {
                 if ts.duration != 0 {
                     return Some(ts.duration);
                 }
-                timesheet_is_active = true;
-                Some(
+                active_timesheet_duration = Some(
                     (if let Some(end) = &ts.end {
                         DateTime::parse_from_str(end, "%Y-%m-%dT%H:%M:%S%z").ok()?
                     } else {
@@ -175,23 +178,20 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
                     .abs()
                     .try_into()
                     .expect("i64 somehow didn't fit into u64 after abs()"),
-                )
+                );
+                active_timesheet_duration
             })
             .sum();
         let hours = (duration / 60) / 60; // implicit floor
-        let mut minutes = duration / 60 % 60;
-        if duration % 60 > 0 {
-            minutes += 1;
-        }
         *(current_state.write().unwrap()) = CurrentState::DurationAvailable((
-            format!("{hours}:{minutes:0>2}"),
-            timesheet_is_active,
+            seconds_to_timestamp(duration),
+            active_timesheet_duration,
         ));
 
         if let Some(notify) = cfg.notify_daily_hours {
             if hours < notify.into() {
                 notified = false;
-            } else if hours >= notify.into() && !notified && timesheet_is_active {
+            } else if hours >= notify.into() && !notified && active_timesheet_duration.is_some() {
                 if let Ok(Ok(ref dbus_notifier)) = dbus_notifier {
                     send_notification(dbus_notifier, notify);
                 }
@@ -201,6 +201,15 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
 
         std::thread::sleep(Duration::from_secs(120));
     }
+}
+
+fn seconds_to_timestamp(seconds: u64) -> String {
+    let hours = (seconds / 60) / 60; // implicit floor
+    let mut minutes = seconds / 60 % 60;
+    if seconds % 60 > 0 {
+        minutes += 1;
+    }
+    format!("{hours}:{minutes:0>2}")
 }
 
 fn send_notification(proxy: &Proxy, hours: u8) {
