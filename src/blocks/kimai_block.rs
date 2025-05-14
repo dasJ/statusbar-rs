@@ -1,4 +1,4 @@
-use chrono::{DateTime, Days, Local, NaiveTime};
+use chrono::{DateTime, Days, Local, NaiveTime, TimeDelta};
 use ureq::Agent;
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::Value;
@@ -15,13 +15,24 @@ struct Config {
     notify_daily_hours: Option<u8>,
 }
 
+/// The state we retrieve from Kimai
+struct KimaiState {
+    /// Timestamp when the data was sampled
+    timestamp: DateTime<Local>,
+    /// Number of seconds of timesheets today that are finished
+    duration_today: i64,
+    /// If a timesheet is active, the duration of said timesheet at the time of sampling,
+    /// otherwise is 0
+    active_timesheet: i64,
+}
+
 enum CurrentState {
     /// No data has been received yet
     NoData,
     /// An internal error has occured
     Error,
-    /// Duration is available and the seconds the current timesheet is active
-    DurationAvailable((String, Option<u64>)),
+    /// Duration is available, sampled at the given time
+    DurationAvailable(KimaiState),
 }
 
 pub struct KimaiBlock {
@@ -31,7 +42,7 @@ pub struct KimaiBlock {
 impl Block for KimaiBlock {
     fn render(&self) -> Option<I3Block> {
         let state = self.current_state.read().unwrap();
-        let (duration, current_timesheet) = match &*state {
+        let state = match &*state {
             CurrentState::NoData => return None,
             CurrentState::Error => {
                 return Some(I3Block {
@@ -43,16 +54,30 @@ impl Block for KimaiBlock {
             CurrentState::DurationAvailable(data) => data,
         };
 
+        // Duration of the active timesheet
+        let active_duration = if state.active_timesheet != 0 {
+            Local::now()
+                .signed_duration_since(state.timestamp)
+                .checked_add(&TimeDelta::seconds(state.active_timesheet))
+                .unwrap()
+                .num_seconds()
+        } else {
+            0
+        };
+
+        let full_time_today = seconds_to_timestamp(state.duration_today + active_duration);
+
         Some(I3Block {
-            full_text: if let Some(current_timesheet) = current_timesheet {
+            full_text: if active_duration > 0 {
                 format!(
-                    "<span foreground='#02ff02'>({}) {duration}</span>",
-                    seconds_to_timestamp(*current_timesheet)
+                    "<span foreground='#02ff02'>{} ({})</span>",
+                    seconds_to_timestamp(active_duration),
+                    full_time_today
                 )
             } else {
-                duration.clone()
+                full_time_today.clone()
             },
-            short_text: Some(duration.clone()),
+            short_text: Some(full_time_today),
             markup: Some(Markup::Pango),
             ..Default::default()
         })
@@ -100,9 +125,8 @@ impl Default for KimaiBlock {
 fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
     #[derive(Debug, serde::Deserialize)]
     struct Timesheet {
-        duration: u64,
+        duration: i64,
         begin: String,
-        end: Option<String>,
     }
 
     let http_agent: Agent = Agent::config_builder()
@@ -128,7 +152,8 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
     });
 
     loop {
-        let from = Local::now()
+        let sample_time = Local::now();
+        let from = sample_time
             .checked_sub_days(Days::new(1))
             .unwrap_or_else(Local::now)
             .with_time(NaiveTime::from_hms_opt(23, 0, 0).unwrap_or_default())
@@ -158,40 +183,35 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
             }
         };
 
-        let mut active_timesheet_duration = None;
-        let duration: u64 = json
+        let mut active_timesheet_duration: i64 = 0;
+        let duration: i64 = json
             .into_iter()
             .filter_map(|ts| {
                 if ts.duration != 0 {
                     return Some(ts.duration);
                 }
-                active_timesheet_duration = Some(
-                    (if let Some(end) = &ts.end {
-                        DateTime::parse_from_str(end, "%Y-%m-%dT%H:%M:%S%z").ok()?
-                    } else {
-                        Local::now().fixed_offset()
-                    })
+                active_timesheet_duration += Local::now()
+                    .fixed_offset()
                     .signed_duration_since(
                         DateTime::parse_from_str(&ts.begin, "%Y-%m-%dT%H:%M:%S%z").ok()?,
                     )
                     .num_seconds()
-                    .abs()
-                    .try_into()
-                    .expect("i64 somehow didn't fit into u64 after abs()"),
-                );
-                active_timesheet_duration
+                    .abs();
+                None
             })
             .sum();
-        let hours = (duration / 60) / 60; // implicit floor
-        *(current_state.write().unwrap()) = CurrentState::DurationAvailable((
-            seconds_to_timestamp(duration),
-            active_timesheet_duration,
-        ));
+        let state = KimaiState {
+            timestamp: sample_time,
+            duration_today: duration,
+            active_timesheet: active_timesheet_duration,
+        };
+        *(current_state.write().unwrap()) = CurrentState::DurationAvailable(state);
 
+        let hours = ((duration + active_timesheet_duration) / 60) / 60; // implicit floor
         if let Some(notify) = cfg.notify_daily_hours {
             if hours < notify.into() {
                 notified = false;
-            } else if hours >= notify.into() && !notified && active_timesheet_duration.is_some() {
+            } else if hours >= notify.into() && !notified && active_timesheet_duration > 0 {
                 if let Ok(Ok(ref dbus_notifier)) = dbus_notifier {
                     send_notification(dbus_notifier, notify);
                 }
@@ -199,11 +219,11 @@ fn request_thread(cfg: &Config, current_state: &Arc<RwLock<CurrentState>>) {
             }
         }
 
-        std::thread::sleep(Duration::from_secs(120));
+        std::thread::sleep(Duration::from_secs(300));
     }
 }
 
-fn seconds_to_timestamp(seconds: u64) -> String {
+fn seconds_to_timestamp(seconds: i64) -> String {
     let hours = (seconds / 60) / 60; // implicit floor
     let mut minutes = seconds / 60 % 60;
     if seconds % 60 > 0 {
