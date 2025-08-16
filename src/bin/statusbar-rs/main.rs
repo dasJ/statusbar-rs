@@ -1,7 +1,6 @@
-#[deny(clippy::pedantic)]
-mod blocks;
+#![deny(clippy::pedantic)]
 
-use blocks::Block;
+use statusbar::{I3Event, blocks::Block};
 use std::io::BufRead as _;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
@@ -14,22 +13,22 @@ fn main() {
 
     // Build blocks
     let blocks: Vec<Arc<dyn Block + Sync + Send>> = vec![
-        Arc::new(blocks::volume_block::VolumeBlock::new(send.clone())),
+        Arc::new(statusbar::blocks::volume_block::VolumeBlock::new(send.clone())),
         #[cfg(feature = "chris")]
-        Arc::<blocks::memory_block::MemoryBlock>::default(),
+        Arc::<statusbar::blocks::memory_block::MemoryBlock>::default(),
         #[cfg(feature = "chris")]
-        Arc::<blocks::disk_block::DiskBlock>::default(),
-        Arc::new(blocks::battery_block::BatteryBlock::new(&send)),
+        Arc::<statusbar::blocks::disk_block::DiskBlock>::default(),
+        Arc::new(statusbar::blocks::battery_block::BatteryBlock::new(&send)),
         #[cfg(feature = "chris")]
-        Arc::<blocks::ip_block::IPBlock>::default(),
+        Arc::<statusbar::blocks::ip_block::IPBlock>::default(),
         #[cfg(feature = "janne")]
-        Arc::<blocks::default_route_block::DefaultRouteBlock>::default(),
-        Arc::new(blocks::dunst_block::DunstBlock::new(send)),
+        Arc::<statusbar::blocks::default_route_block::DefaultRouteBlock>::default(),
+        Arc::new(statusbar::blocks::dunst_block::DunstBlock::new(send)),
         #[cfg(feature = "janne")]
-        Arc::new(blocks::kimai_block::KimaiBlock::default()),
-        Arc::<blocks::load_block::LoadBlock>::default(),
-        Arc::<blocks::temperature_block::TemperatureBlock>::default(),
-        Arc::<blocks::date_block::DateBlock>::default(),
+        Arc::new(statusbar::blocks::kimai_block::KimaiBlock::default()),
+        Arc::<statusbar::blocks::load_block::LoadBlock>::default(),
+        Arc::<statusbar::blocks::temperature_block::TemperatureBlock>::default(),
+        Arc::<statusbar::blocks::date_block::DateBlock>::default(),
     ];
 
     // Header block
@@ -98,11 +97,4 @@ fn event_handler(blocks: Vec<Arc<dyn Block + Sync + Send>>) {
             eprintln!("Received invalid JSON from i3: {}", line);
         }
     }
-}
-
-/// An event received from I3
-#[derive(Debug, Default, serde::Deserialize)]
-pub struct I3Event {
-    name: Option<String>,
-    button: u8,
 }
