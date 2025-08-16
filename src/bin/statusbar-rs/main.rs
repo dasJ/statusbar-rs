@@ -1,6 +1,6 @@
 #![deny(clippy::pedantic)]
 
-use statusbar::{I3Event, blocks::Block};
+use statusbar::{blocks::Block, I3Event};
 use std::io::BufRead as _;
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
@@ -13,7 +13,9 @@ fn main() {
 
     // Build blocks
     let blocks: Vec<Arc<dyn Block + Sync + Send>> = vec![
-        Arc::new(statusbar::blocks::volume_block::VolumeBlock::new(send.clone())),
+        Arc::new(statusbar::blocks::volume_block::VolumeBlock::new(
+            send.clone(),
+        )),
         #[cfg(feature = "chris")]
         Arc::<statusbar::blocks::memory_block::MemoryBlock>::default(),
         #[cfg(feature = "chris")]

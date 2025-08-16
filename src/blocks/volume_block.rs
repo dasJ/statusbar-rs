@@ -124,7 +124,10 @@ impl VolumeBlock {
                         // Connection died, let's reconnect
                         let _idc = handle.join(); // Wait for the thread to die
                         let sender2 = sender.clone();
-                        let _idc = cmd_sender2.lock().ok().and_then(|cmd| cmd.send(PulseCommand::QuitThread).ok()); // Quit command thread
+                        let _idc = cmd_sender2
+                            .lock()
+                            .ok()
+                            .and_then(|cmd| cmd.send(PulseCommand::QuitThread).ok()); // Quit command thread
                         let (cmd_sender, cmd_receiver) = std::sync::mpsc::channel();
                         if let Ok(mut guard) = cmd_sender2.lock() {
                             *guard = cmd_sender.clone();
