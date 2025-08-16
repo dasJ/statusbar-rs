@@ -70,6 +70,7 @@ fn main() {
 }
 
 /// Handles I3 mouse events
+#[allow(clippy::needless_pass_by_value)]
 fn event_handler(blocks: Vec<Arc<dyn Block + Sync + Send>>) {
     let stdin = std::io::stdin();
     for line in stdin.lock().lines().map_while(Result::ok) {
@@ -85,16 +86,16 @@ fn event_handler(blocks: Vec<Arc<dyn Block + Sync + Send>>) {
                     if let Some(block) = blocks.get(name) {
                         block.click(&event);
                     } else {
-                        eprintln!("Got event for invalid block from i3: {}", name);
+                        eprintln!("Got event for invalid block from i3: {name}");
                     }
                 } else {
-                    eprintln!("Received invalid block name from i3: {}", name);
+                    eprintln!("Received invalid block name from i3: {name}");
                 }
             } else {
                 eprintln!("Received event without name from i3");
             }
         } else {
-            eprintln!("Received invalid JSON from i3: {}", line);
+            eprintln!("Received invalid JSON from i3: {line}");
         }
     }
 }

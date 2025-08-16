@@ -87,8 +87,6 @@ impl Block for BatteryBlock {
                             if contents == "1" {
                                 charging = true;
                             }
-                        } else {
-                            continue;
                         }
                     }
                 }
@@ -240,6 +238,7 @@ impl Block for BatteryBlock {
 }
 
 impl BatteryBlock {
+    #[must_use]
     pub fn new(timer_cancel: &Sender<()>) -> Self {
         Self {
             hidpp: Hidpp::new(),

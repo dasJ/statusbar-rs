@@ -90,6 +90,16 @@ impl Block for KimaiBlock {
     }
 
     fn click(&self, evt: &I3Event) {
+        #[derive(serde::Serialize)]
+        struct CreateBody {
+            #[serde(rename = "project")]
+            project_id: u64,
+            #[serde(rename = "activity")]
+            activity_id: u64,
+            #[serde(rename = "description")]
+            description: String,
+        }
+
         let Some(cfg) = &self.config else {
             return;
         };
@@ -109,17 +119,8 @@ impl Block for KimaiBlock {
             }
             3 => {
                 if let Some(err) = stop_active_timesheet(cfg, agent) {
-                    eprintln!("{}", err);
+                    eprintln!("{err}");
                     return;
-                };
-                #[derive(serde::Serialize)]
-                struct CreateBody {
-                    #[serde(rename = "project")]
-                    project_id: u64,
-                    #[serde(rename = "activity")]
-                    activity_id: u64,
-                    #[serde(rename = "description")]
-                    description: String,
                 }
                 let Some(project_id) = cfg.default_project_id else {
                     return;

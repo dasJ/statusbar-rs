@@ -39,6 +39,7 @@ impl Block for DunstBlock {
 }
 
 impl DunstBlock {
+    #[must_use]
     pub fn new(timer_cancel: Sender<()>) -> Self {
         // Connect
         let Ok(dbus_conn) = Connection::session() else {

@@ -101,6 +101,7 @@ enum PulseEvent {
 }
 
 impl VolumeBlock {
+    #[must_use]
     pub fn new(timer_cancel: Sender<()>) -> Self {
         let (cmd_sender, cmd_receiver) = std::sync::mpsc::channel();
         let ret = Self {
@@ -123,15 +124,18 @@ impl VolumeBlock {
                         // Connection died, let's reconnect
                         let _idc = handle.join(); // Wait for the thread to die
                         let sender2 = sender.clone();
-                        let _idc = cmd_sender2.lock().unwrap().send(PulseCommand::QuitThread); // Quit command
-                                                                                               // thread
+                        let _idc = cmd_sender2.lock().ok().and_then(|cmd| cmd.send(PulseCommand::QuitThread).ok()); // Quit command thread
                         let (cmd_sender, cmd_receiver) = std::sync::mpsc::channel();
-                        *cmd_sender2.lock().unwrap() = cmd_sender;
+                        if let Ok(mut guard) = cmd_sender2.lock() {
+                            *guard = cmd_sender.clone();
+                        }
                         handle = std::thread::spawn(move || pulse_thread(sender2, cmd_receiver));
                     }
                     Ok(PulseEvent::Changed(state)) => {
-                        *state2.write().unwrap() = Some(state);
-                        let _idc = cancel2.lock().unwrap().send(());
+                        if let Ok(mut guard) = state2.write() {
+                            *guard = Some(state);
+                        }
+                        let _idc = cancel2.lock().ok().and_then(|cmd| cmd.send(()).ok());
                     }
                     Err(_) => {}
                 }
@@ -297,7 +301,7 @@ fn pulse_thread(
             PulseCommand::QuitThread => {
                 return;
             }
-        };
+        }
     });
 
     // Main loop
