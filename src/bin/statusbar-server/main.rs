@@ -17,6 +17,7 @@ fn main() {
         "battery" => Box::new(statusbar::blocks::battery_block::BatteryBlock::new(
             &send.clone(),
         )),
+        #[cfg(feature = "janne")]
         "kimai" => Box::new(statusbar::blocks::kimai_block::KimaiBlock::default()),
         _ => panic!("Unknown block"),
     };

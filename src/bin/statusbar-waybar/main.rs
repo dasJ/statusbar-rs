@@ -12,6 +12,7 @@ fn main() {
 
     let block = std::env::args().nth(1).unwrap();
     let block: Box<dyn Block + Sync + Send> = match block.as_str() {
+        #[cfg(feature = "janne")]
         "default-route" => {
             Box::new(statusbar::blocks::default_route_block::DefaultRouteBlock::default())
         }
