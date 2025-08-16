@@ -22,7 +22,7 @@ use std::fmt::{Display, Formatter};
 
 use super::I3Event;
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum Markup {
     Pango,
 }
@@ -35,7 +35,7 @@ impl Display for Markup {
     }
 }
 
-#[derive(Debug, Default, serde::Serialize)]
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
 pub struct I3Block {
     pub full_text: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -45,6 +45,8 @@ pub struct I3Block {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub markup: Option<Markup>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tooltip: Option<String>,
 }
 
 pub trait Block {
