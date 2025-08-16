@@ -14,6 +14,7 @@ pub mod kimai_block;
 pub mod load_block;
 #[cfg(feature = "chris")]
 pub mod memory_block;
+pub mod socket_block;
 pub mod temperature_block;
 pub mod volume_block;
 
