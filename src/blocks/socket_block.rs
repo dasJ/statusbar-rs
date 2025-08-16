@@ -72,7 +72,11 @@ impl SocketBlock {
             }
         });
 
-        Self { connected, content, stream: stream2 }
+        Self {
+            connected,
+            content,
+            stream: stream2,
+        }
     }
 }
 

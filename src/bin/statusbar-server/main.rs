@@ -36,7 +36,7 @@ fn main() {
     let socket = runtime_dir.to_str().unwrap().to_owned();
     let listener = UnixListener::bind(socket).expect("Unable to bind to unix socket");
 
-    let consumers = Arc::new(RwLock::new(vec!()));
+    let consumers = Arc::new(RwLock::new(vec![]));
     let content = Arc::new(RwLock::new(String::new()));
 
     let consumers2 = consumers.clone();
@@ -52,12 +52,18 @@ fn main() {
                 std::thread::spawn(move || {
                     let (send, recv) = mpsc::channel::<()>();
                     consumers.write().unwrap().push(send.clone());
-                    if stream.write_all(content.read().unwrap().as_bytes()).is_err() {
+                    if stream
+                        .write_all(content.read().unwrap().as_bytes())
+                        .is_err()
+                    {
                         eprintln!("Lost client connection while performing initial write");
                         return;
                     }
                     while recv.recv().is_ok() {
-                        if stream.write_all(content.read().unwrap().as_bytes()).is_err() {
+                        if stream
+                            .write_all(content.read().unwrap().as_bytes())
+                            .is_err()
+                        {
                             eprintln!("Lost client connection while writing message");
                             return;
                         }
