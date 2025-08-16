@@ -89,7 +89,7 @@ impl Block for SocketBlock {
             return;
         }
         let mut stream = self.stream.write().unwrap();
-        #[allow(clippy::option_map_unit_fn)]
+        #[allow(clippy::option_map_unit_fn, clippy::option_map_unit_fn)]
         stream.as_mut().map(|mut stream| {
             if serde_json::to_writer(&mut stream, &event).is_err() {
                 eprintln!("Failed to write event to socket");
