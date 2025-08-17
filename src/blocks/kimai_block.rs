@@ -1,5 +1,5 @@
 use chrono::{DateTime, Days, Local, NaiveTime, TimeDelta};
-use ureq::Agent;
+use ureq::{tls::RootCerts, Agent};
 use zbus::blocking::{Connection, Proxy};
 use zbus::zvariant::Value;
 
@@ -200,6 +200,7 @@ impl Default for KimaiBlock {
         let http_agent: Agent = Agent::config_builder()
             .tls_config(
                 ureq::tls::TlsConfig::builder()
+                    .root_certs(RootCerts::PlatformVerifier)
                     .provider(ureq::tls::TlsProvider::NativeTls)
                     .build(),
             )
