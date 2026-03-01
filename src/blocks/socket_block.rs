@@ -23,7 +23,11 @@ impl SocketBlock {
         } else {
             let runtime_dir = std::env::var("XDG_RUNTIME_DIR").expect("XDG_RUNTIME_DIR not set");
             let mut runtime_dir = Path::new(&runtime_dir).to_path_buf();
-            runtime_dir.push("statusbar");
+            if cfg!(debug_assertions) {
+                runtime_dir.push("statusbar-dev");
+            } else {
+                runtime_dir.push("statusbar");
+            }
             if !runtime_dir.exists() {
                 let _ = std::fs::create_dir_all(&runtime_dir);
             }

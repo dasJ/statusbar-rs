@@ -25,7 +25,11 @@ fn main() {
 
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR").expect("XDG_RUNTIME_DIR not set");
     let mut runtime_dir = Path::new(&runtime_dir).to_path_buf();
-    runtime_dir.push("statusbar");
+    if cfg!(debug_assertions) {
+        runtime_dir.push("statusbar-dev");
+    } else {
+        runtime_dir.push("statusbar");
+    }
     if !runtime_dir.exists() {
         let _ = std::fs::create_dir_all(&runtime_dir);
     }
@@ -34,7 +38,8 @@ fn main() {
         let _ = std::fs::remove_file(&runtime_dir);
     }
     let socket = runtime_dir.to_str().unwrap().to_owned();
-    let listener = UnixListener::bind(socket).expect("Unable to bind to unix socket");
+    let listener = UnixListener::bind(&socket).expect("Unable to bind to unix socket");
+    println!("Bound to socket at {socket}");
 
     let consumers = Arc::new(RwLock::new(vec![]));
     let content = Arc::new(RwLock::new(String::new()));
