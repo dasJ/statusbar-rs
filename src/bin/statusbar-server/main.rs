@@ -7,6 +7,7 @@ use std::path::Path;
 use std::sync::{mpsc, Arc, RwLock};
 use std::time::Duration;
 
+#[allow(clippy::too_many_lines)]
 fn main() {
     // For cancellable sleep
     let (send, recv) = mpsc::channel::<()>();
